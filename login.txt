@@ -1,0 +1,4 @@
+Usuário criado para testar aplicação:
+
+Email: mayconteste@gmail.com
+Senha: 1234
