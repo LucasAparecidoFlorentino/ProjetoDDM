@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
-import { request, PERMISSIONS } from 'react-native-permissions';
+// import { request, PERMISSIONS } from 'react-native-permissions';
 
-import Geolocation from '@react-native-community/geolocation';
+// import Geolocation from '@react-native-community/geolocation';
 
 import { Container } from './styles';
+
+import Api from '../../Api';
 
 import {
 	Scroller,
@@ -20,7 +22,11 @@ import {
 	LocationInput,
 	LocationFinder,
 
+    LoadingIcon,
+    ListArea,
 } from './styles';
+
+import BarberItem from '../../components/BarberItem';
 
 import SearchIcon from '../../assets/search.svg';
 import MyLocationIcon from '../../assets/my_location.svg';
@@ -30,25 +36,59 @@ export default () => {
 
     const [locationText, setLocationText] = useState('');
 
-    const [coords, setCoods] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-    const handleLocationFinder = async () => {
-        setCoods(null);
-        let result = await request(
-                Platform.OS === 'ios' ?
-                    PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
-                    :
-                    PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION
-            );
+    const [list, setList] = useState([]);
 
-        if(result == 'granted') {
+    // const [coords, setCoords] = useState(null);
 
-            Geolocation.getCurrentPosition((info)=>{
-                console.log(info);
-            });
+    // const handleLocationFinder = async () => {
+    //     setCoords(null);
+    //     let result = await request(
+    //             Platform.OS === 'ios' ?
+    //                 PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
+    //                 :
+    //                 PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION
+    //         );
+
+    //     if(result == 'granted') {
+
+    //          setLoading(true);
+    //          setLocationText('');
+    //          setList([]);
+
+    //         Geolocation.getCurrentPosition((info)=>{
+    //             setCoords(info.coords);
+    //             getBarbers();
+    //         });
+    //     }
+
+    // }
+
+    const getBarbers = async () => {
+        setLoading(true);
+        setList([]);
+
+        let res = await Api.getBarbers();
+        // console.log(res);
+
+        if(res.error == '') {
+            if(res.loc) {
+                setLocationText(res.loc);
+            }
+
+            setList(res.data);
+
+        } else {
+            alert("Erro: "+res.error);
         }
 
+        setLoading(false);
     }
+
+    useEffect(()=>{
+        getBarbers();
+    }, []);
 
     return (
         <Container>
@@ -68,11 +108,20 @@ export default () => {
                         value={locationText}
                         onChangeText={t=>setLocationText(t)}
                     />
-        			<LocationFinder onPress={handleLocationFinder}>
+        			<LocationFinder>
         				<MyLocationIcon width="24px" height="24px" fill="#FFFFFF" />
                         </LocationFinder>
         		</LocationArea>
 
+                {loading && 
+                <LoadingIcon size="large" color="#FFFFFF" />
+            }
+
+            <ListArea>
+                {list.map((item, k)=>(
+                    <BarberItem key={k} data={item} />
+                ))}
+            </ListArea>
 
         	</Scroller>
         </Container>
